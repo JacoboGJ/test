@@ -1,0 +1,295 @@
+package org.telegram.updateshandlers;
+
+import org.telegram.BotConfig;
+import org.telegram.telegrambots.api.methods.send.SendMessage;
+import org.telegram.telegrambots.api.methods.updatingmessages.EditMessageText;
+import org.telegram.telegrambots.api.objects.Message;
+import org.telegram.telegrambots.api.objects.Update;
+import org.telegram.telegrambots.api.objects.replykeyboard.InlineKeyboardMarkup;
+import org.telegram.telegrambots.api.objects.replykeyboard.buttons.InlineKeyboardButton;
+import org.telegram.telegrambots.bots.TelegramLongPollingBot;
+import org.telegram.telegrambots.exceptions.TelegramApiException;
+import org.telegram.telegrambots.logging.BotLogger;
+import org.telegram.telegrambots.api.methods.AnswerInlineQuery;
+import org.telegram.telegrambots.api.objects.inlinequery.InlineQuery;
+import org.telegram.telegrambots.api.objects.inlinequery.inputmessagecontent.InputLocationMessageContent;
+import org.telegram.telegrambots.api.objects.inlinequery.inputmessagecontent.InputTextMessageContent;
+import org.telegram.telegrambots.api.objects.inlinequery.result.InlineQueryResult;
+import org.telegram.telegrambots.api.objects.inlinequery.result.InlineQueryResultArticle;
+import java.util.ArrayList;
+import java.util.List;
+
+
+public class JacoBotHandlers extends TelegramLongPollingBot {
+
+    private static final String LOGTAG = "JacoBot: ";
+    private static final Integer CACHETIME = 86400;
+    private static final String THUMBNAILBLUE = "https://lh5.ggpht.com/-kSFHGvQkFivERzyCNgKPIECtIOELfPNWAQdXqQ7uqv2xztxqll4bVibI0oHJYAuAas=w300";
+    private static ArrayList<String> users = new ArrayList<String>();
+    private static boolean calc=false;
+    private static String calculo="";
+	@Override
+    public String getBotToken() {
+        return BotConfig.JACOBOT_TOKEN;
+    }
+    
+    
+    @Override
+    public void onUpdateReceived(Update update) {
+        try {
+        	if (update.hasInlineQuery()) {
+                BotLogger.info(LOGTAG, "handling inlinequery");
+                /*
+                 * This base code can be used to extend it when interested in handling inline queries
+                 * not fully working yet
+                 * just call:
+                 * handleIncomingInlineQuery(update.getInlineQuery());
+                 * and modify the called method
+                */
+                handleIncomingInlineQuery(update.getInlineQuery());
+            } else if (update.hasMessage()) {
+                BotLogger.info(LOGTAG, "handling message");
+                Message message = update.getMessage();
+                if (message.hasText()) {
+                    // create a object that contains the information to send back the message
+                	// The bot will always repeat what the user has said
+                    SendMessage sendMessageRequest = new SendMessage();
+                    String username="";
+                    String userId="";
+                    username = message.getFrom().getUserName();
+                    sendMessageRequest.setChatId(message.getChatId().toString()); //who should get the message? the sender from which we got the message...
+                    //sendMessageRequest.setText("you said: " + message.getText());
+                    if(users.contains(message.getChatId().toString())){
+                    	sendMessageRequest.setText(username+": "+message.getText());
+                    }else{
+                    	sendMessageRequest.setText("Good to hear from you "+username+" say anything you want and I will repeat it. As a matter of fact, you just say:  "+message.getText());
+                    	users.add(message.getChatId().toString());
+                    }
+                    try {
+                    	  BotLogger.info(LOGTAG, sendMessageRequest.toString());
+                          sendMessage(sendMessageRequest); //at the end, so some magic and send the message ;)
+                    } catch (TelegramApiException e) {
+                    //do some error handling of your choice ;)
+                    }
+                }
+                if(update.getMessage().getText().startsWith("calc")){
+                	
+                	calc=true;
+                	String nada="";
+                	String num="1";
+                	nada.concat(num);
+                	System.out.println(nada);
+                	//tecladoCalc(update);
+                	SendMessage sm = new SendMessage();
+                	sm.setText("Calculadora");
+                	sm.setChatId(update.getMessage().getChatId());
+                	sm.setReplyMarkup(tecladoCalc());
+                    
+                    try {
+                        sendMessage(sm);
+                        BotLogger.info(LOGTAG, sm.toString());
+                    } catch (Throwable e) {
+                        e.printStackTrace();
+                    }
+                    
+                }else if (update.getMessage().getText().startsWith("I do not know what to say")) {
+                	// A little help for undecided users (we take the opportunity to add an inline keyboard
+                	SendMessage sm = new SendMessage();
+                    sm.setText("I give you two options: ");
+                    sm.setChatId(update.getMessage().getChatId());
+                    InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+                    List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
+                    List<InlineKeyboardButton> row = new ArrayList<>();
+                    InlineKeyboardButton button = new InlineKeyboardButton();
+                    button.setText("I am cool");
+                    button.setCallbackData("COOL");
+                    InlineKeyboardButton button2 = new InlineKeyboardButton();
+                    button2.setText("I am great");
+                    button2.setCallbackData("GREAT");
+                    row.add(button);
+                    row.add(button2);
+                    keyboard.add(row);
+                    markup.setKeyboard(keyboard);
+                    sm.setReplyMarkup(markup);
+                    try {
+                        sendMessage(sm);
+                        BotLogger.info(LOGTAG, sm.toString());
+                    } catch (Throwable e) {
+                        e.printStackTrace();
+                    }
+                } 
+            } else if (update.hasCallbackQuery()) {
+            	if(calc){
+	            	calculo.concat(update.getCallbackQuery().getData());
+	            	calculo.concat(".");
+	            	System.out.println(update.getCallbackQuery().getData());
+            		
+	            	EditMessageText editMessage = new EditMessageText();
+	                editMessage.setChatId(update.getCallbackQuery().getMessage().getChatId());
+	                editMessage.setMessageId(update.getCallbackQuery().getMessage().getMessageId());
+	                editMessage.setText("recibido");
+	                editMessage.setReplyMarkup(tecladoCalc());
+	                try {
+	              	    BotLogger.info(LOGTAG, editMessage.toString());
+	                    editMessageText(editMessage);
+	                } catch (Throwable e) {
+	                    e.printStackTrace();
+	                }
+            	}else{
+            		// We want to get back the option selected by the user and print it on the screen
+	                EditMessageText editMessage = new EditMessageText();
+	                editMessage.setChatId(update.getCallbackQuery().getMessage().getChatId());
+	                editMessage.setMessageId(update.getCallbackQuery().getMessage().getMessageId());
+	                editMessage.setText("Well done, you finally said: " + update.getCallbackQuery().getData());
+	                try {
+	              	    BotLogger.info(LOGTAG, editMessage.toString());
+	                    editMessageText(editMessage);
+	                } catch (Throwable e) {
+	                    e.printStackTrace();
+	                }
+            	}
+            }
+
+        } catch (Exception e) {
+            BotLogger.error(LOGTAG, e);
+        }
+    }
+
+    @Override
+    public String getBotUsername() {
+        return BotConfig.JACOBOT_USER;
+    }
+
+    private void handleIncomingInlineQuery(InlineQuery inlineQuery) {
+        String query = inlineQuery.getQuery();
+        BotLogger.debug(LOGTAG, "Searching: " + query);
+        try {
+            if (!query.isEmpty()) {
+                //List<RaeService.RaeResult> results = raeService.getResults(query);
+                //answerInlineQuery(converteResultsToResponse(inlineQuery, results));
+                AnswerInlineQuery ianswerInlineQuery = new AnswerInlineQuery();
+                ianswerInlineQuery.setInlineQueryId(inlineQuery.getId());
+                ianswerInlineQuery.setCacheTime(CACHETIME);
+                List<InlineQueryResult> lst = new ArrayList<>();;
+                
+                InlineQueryResultArticle article = new InlineQueryResultArticle();
+                InputTextMessageContent messageContent = new InputTextMessageContent();
+                messageContent.disableWebPagePreview();
+                messageContent.enableMarkdown(true);
+                messageContent.setMessageText("I always say hi");
+                article.setInputMessageContent(messageContent);
+                article.setId(Integer.toString(1));
+                article.setTitle("Hi");
+                article.setDescription("Description");
+                //article.setThumbUrl(THUMBNAILBLUE);
+                lst.add(article);
+                ianswerInlineQuery.setResults(lst);
+                answerInlineQuery(ianswerInlineQuery);
+            } else {
+                // answerInlineQuery(converteResultsToResponse(inlineQuery, new ArrayList<>()));
+                AnswerInlineQuery ianswerInlineQuery = new AnswerInlineQuery();
+                ianswerInlineQuery.setInlineQueryId(inlineQuery.getId());
+                ianswerInlineQuery.setCacheTime(CACHETIME);
+                List<InlineQueryResult> lst = new ArrayList<>();;
+                
+                InlineQueryResultArticle article = new InlineQueryResultArticle();
+                InputTextMessageContent messageContent = new InputTextMessageContent();
+                messageContent.disableWebPagePreview();
+                messageContent.enableMarkdown(true);
+                messageContent.setMessageText(new String("Siempre digo hola"));
+                article.setInputMessageContent(messageContent);
+                article.setId("1");
+                article.setThumbUrl(THUMBNAILBLUE);
+                article.setTitle("Hola");
+                article.setDescription("Descripcion");
+                //article.setThumbUrl(THUMBNAILBLUE);
+                lst.add(article);
+                InputLocationMessageContent messageContent2 = new InputLocationMessageContent();
+                messageContent2.setLatitude(new Float(1.1));
+                messageContent2.setLongitude(new Float(2.2));
+                article.setInputMessageContent(messageContent2);
+                lst.add(article);
+                ianswerInlineQuery.setResults(lst);
+                BotLogger.info(LOGTAG, ianswerInlineQuery.toString());
+                answerInlineQuery(ianswerInlineQuery);
+
+            }
+        } catch (TelegramApiException e) {
+            BotLogger.error(LOGTAG, e);
+        }
+    }
+    
+    private InlineKeyboardMarkup tecladoCalc(){
+    	
+    	InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+    	List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
+    	List<InlineKeyboardButton> row1 = new ArrayList<>();
+    	List<InlineKeyboardButton> row2 = new ArrayList<>();
+    	List<InlineKeyboardButton> row3 = new ArrayList<>();
+    	List<InlineKeyboardButton> row4 = new ArrayList<>();
+    	
+    	InlineKeyboardButton button1 = new InlineKeyboardButton();
+        button1.setText("1");
+        button1.setCallbackData("1");
+        InlineKeyboardButton button2 = new InlineKeyboardButton();
+        button2.setText("2");
+        button2.setCallbackData("2");
+        InlineKeyboardButton button3 = new InlineKeyboardButton();
+        button3.setText("3");
+        button3.setCallbackData("3");
+        InlineKeyboardButton button4 = new InlineKeyboardButton();
+        button4.setText("4");
+        button4.setCallbackData("4");
+        InlineKeyboardButton button5 = new InlineKeyboardButton();
+        button5.setText("5");
+        button5.setCallbackData("5");
+        InlineKeyboardButton button6 = new InlineKeyboardButton();
+        button6.setText("6");
+        button6.setCallbackData("6");
+        InlineKeyboardButton button7 = new InlineKeyboardButton();
+        button7.setText("7");
+        button7.setCallbackData("7");
+        InlineKeyboardButton button8 = new InlineKeyboardButton();
+        button8.setText("8");
+        button8.setCallbackData("8");
+        InlineKeyboardButton button9 = new InlineKeyboardButton();
+        button9.setText("9");
+        button9.setCallbackData("9");
+        InlineKeyboardButton button0 = new InlineKeyboardButton();
+        button0.setText("0");
+        button0.setCallbackData("0");
+        InlineKeyboardButton buttonPlus = new InlineKeyboardButton();
+        buttonPlus.setText("+");
+        buttonPlus.setCallbackData("+");
+        InlineKeyboardButton buttonEqual = new InlineKeyboardButton();
+        buttonEqual.setText("=");
+        buttonEqual.setCallbackData("=");
+        
+        row1.add(button1);
+        row1.add(button2);
+        row1.add(button3);
+        
+        row2.add(button4);
+        row2.add(button5);
+        row2.add(button6);
+        
+        row3.add(button7);
+        row3.add(button8);
+        row3.add(button9);
+        
+        row4.add(buttonEqual);
+        row4.add(button0);
+        row4.add(buttonPlus);
+        
+        
+        keyboard.add(row1);
+        keyboard.add(row2);
+        keyboard.add(row3);
+        keyboard.add(row4);
+        
+        markup.setKeyboard(keyboard);
+        return markup;
+    }
+
+    
+}

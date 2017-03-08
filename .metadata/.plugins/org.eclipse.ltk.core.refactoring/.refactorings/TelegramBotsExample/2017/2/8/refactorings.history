@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Rename type &apos;org.telegram.updateshandlers.RepitemeHandlers&apos; to &apos;JacoBotHandlers&apos;&#x0D;&#x0A;- Original project: &apos;TelegramBotsExample&apos;&#x0D;&#x0A;- Original element: &apos;org.telegram.updateshandlers.RepitemeHandlers&apos;&#x0D;&#x0A;- Renamed element: &apos;org.telegram.updateshandlers.JacoBotHandlers&apos;&#x0D;&#x0A;- Update references to refactored element&#x0D;&#x0A;- Update textual occurrences in comments and strings" description="Rename type &apos;RepitemeHandlers&apos;" flags="589830" id="org.eclipse.jdt.ui.rename.type" input="/src\/main\/java&lt;org.telegram.updateshandlers{RepitemeHandlers.java[RepitemeHandlers" matchStrategy="1" name="JacoBotHandlers" qualified="false" references="true" similarDeclarations="false" stamp="1487622129895" textual="false" version="1.0"/>
+</session>
